@@ -1,6 +1,6 @@
 {
   "name": "homebridge-bticino-classe300x",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "Homebridge plugin to open the door of a BTicino Classe 100X/300X intercom via SSH",
   "main": "src/index.js",
   "keywords": [

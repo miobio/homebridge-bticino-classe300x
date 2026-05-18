@@ -2,7 +2,9 @@
 
 A Homebridge plugin to open the door of a **BTicino Classe 100X / 300X** intercom directly from Apple HomeKit, via SSH.
 
-This plugin exposes a **switch** in HomeKit that automatically resets to OFF after a configurable delay (default 5 seconds), simulating a momentary door button press.
+This plugin exposes:
+- A **garage door** in HomeKit that automatically closes after a configurable delay (default 5 seconds), simulating a momentary door button press
+- An optional **contact sensor** watchdog that monitors SSH connectivity to the intercom and triggers an alert in HomeKit if the intercom becomes unreachable
 
 > **Important:** This plugin requires the custom firmware developed by [@fquinto](https://github.com/fquinto/bticinoClasse300x) to be installed on your intercom. The firmware enables SSH access and exposes the OpenWebNet socket used to send door commands.
 
@@ -41,7 +43,9 @@ Add the following to your Homebridge `config.json` under `accessories`:
       "username": "root2",
       "password": "pwned123",
       "sshPort": 22,
-      "resetDelay": 5
+      "resetDelay": 5,
+      "watchdog": true,
+      "watchdogInterval": 10
     }
   ]
 }
@@ -49,21 +53,25 @@ Add the following to your Homebridge `config.json` under `accessories`:
 
 ### Configuration Parameters
 
-| Parameter    | Required | Default    | Description                                                   |
-|--------------|----------|------------|---------------------------------------------------------------|
-| `accessory`  | ✅ Yes   | -          | Must be `BticinoDoorOpener`                                   |
-| `name`       | ✅ Yes   | -          | Name shown in HomeKit                                         |
-| `host`       | ✅ Yes   | -          | IP address of the intercom                                    |
-| `username`   | No       | `root2`    | SSH username (set during firmware preparation)                |
-| `password`   | No       | `pwned123` | SSH password (set during firmware preparation)                |
-| `sshPort`    | No       | `22`       | SSH port                                                      |
-| `resetDelay` | No       | `5`        | Seconds before the switch resets to OFF after being triggered |
+| Parameter         | Required | Default | Description                                                         |
+|-------------------|----------|---------|---------------------------------------------------------------------|
+| `accessory`       | ✅ Yes   | -       | Must be `BticinoDoorOpener`                                         |
+| `name`            | ✅ Yes   | -       | Name shown in HomeKit                                               |
+| `host`            | ✅ Yes   | -       | IP address of the intercom                                          |
+| `username`        | No       | `root2` | SSH username (set during firmware preparation)                      |
+| `password`        | No       | `pwned123` | SSH password (set during firmware preparation)                   |
+| `sshPort`         | No       | `22`    | SSH port                                                            |
+| `resetDelay`      | No       | `5`     | Seconds before the door resets to CLOSED after being triggered      |
+| `watchdog`        | No       | `true`  | Set to `false` to disable the watchdog contact sensor               |
+| `watchdogInterval`| No       | `10`    | How often (in minutes) the watchdog checks SSH connectivity         |
 
 ---
 
 ## How It Works
 
-When you tap the switch in HomeKit:
+### Door Opening
+
+When you tap the garage door in HomeKit:
 
 1. The plugin connects to the intercom via SSH
 2. It sends the OpenWebNet door open command via `nc` (netcat):
@@ -72,10 +80,18 @@ When you tap the switch in HomeKit:
    sleep 1
    echo '*8*20*20##' | nc -w 2 0 30006
    ```
-3. The door opens
-4. After `resetDelay` seconds, the switch automatically resets to OFF
+3. HomeKit shows the door as OPEN
+4. After `resetDelay` seconds, the door automatically resets to CLOSED
 
-If the SSH connection fails, the switch immediately resets to OFF and an error is logged in Homebridge.
+If the SSH connection fails, the door immediately resets to CLOSED and an error is logged in Homebridge.
+
+### Watchdog
+
+When enabled, the plugin attempts an SSH connection to the intercom every `watchdogInterval` minutes:
+- If SSH succeeds → contact sensor stays **closed** (normal)
+- If SSH fails → contact sensor goes **open** → HomeKit triggers an alert ("Intercom Not Working")
+
+This is especially useful because the dropbear SSH daemon on the custom firmware can occasionally be killed by internal BTicino processes. You can use this sensor to trigger a HomeKit automation (e.g. a notification on your phone).
 
 ---
 
@@ -84,10 +100,10 @@ If the SSH connection fails, the switch immediately resets to OFF and an error i
 **SSH connection refused / timeout**
 - Make sure the intercom is reachable on the network (`ping <host>`)
 - Verify dropbear (SSH daemon) is running on the intercom
-- If SSH stops working after a few days, it means the dropbear daemon has been killed by an internal BTicino process. The fix is to install a watchdog script — see the instructions in the [fquinto repository issues](https://github.com/fquinto/bticinoClasse300x/issues)
+- If SSH stops working after a few days, install the watchdog script on the intercom itself — see the [fquinto repository issues](https://github.com/fquinto/bticinoClasse300x/issues)
 
 **Door does not open**
-- Verify the OpenWebNet command works manually from your machine:
+- Verify the OpenWebNet command works manually:
   ```bash
   ssh root2@<intercom_ip> "echo '*8*19*20##' | nc -w 2 0 30006; sleep 1; echo '*8*20*20##' | nc -w 2 0 30006"
   ```
