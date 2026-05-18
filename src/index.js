@@ -2,7 +2,7 @@
 
 const { Client } = require('ssh2');
 
-const PLUGIN_NAME = 'homebridge-bticinoClasse300x';
+const PLUGIN_NAME = 'homebridge-bticino-classe300x';
 const PLATFORM_NAME = 'BticinoDoorOpener';
 
 module.exports = (api) => {

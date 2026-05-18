@@ -1,4 +1,4 @@
-# homebridge-bticinoClasse300x
+# homebridge-bticino-classe300x
 
 A Homebridge plugin to open the door of a **BTicino Classe 100X / 300X** intercom directly from Apple HomeKit, via SSH.
 
@@ -20,10 +20,10 @@ This plugin exposes a **switch** in HomeKit that automatically resets to OFF aft
 ## Installation
 
 ```bash
-npm install -g homebridge-bticinoClasse300x
+npm install -g homebridge-bticino-classe300x
 ```
 
-Or install via the Homebridge UI by searching for `homebridge-bticinoClasse300x`.
+Or install via the Homebridge UI by searching for `homebridge-bticino-classe300x`.
 
 ---
 
@@ -84,7 +84,7 @@ If the SSH connection fails, the switch immediately resets to OFF and an error i
 **SSH connection refused / timeout**
 - Make sure the intercom is reachable on the network (`ping <host>`)
 - Verify dropbear (SSH daemon) is running on the intercom
-- If SSH stops working after a few days, check the [dropbear watchdog solution](https://github.com/fquinto/bticinoClasse300x/issues) documented in the fquinto repository
+- If SSH stops working after a few days, it means the dropbear daemon has been killed by an internal BTicino process. The fix is to install a watchdog script — see the instructions in the [fquinto repository issues](https://github.com/fquinto/bticinoClasse300x/issues)
 
 **Door does not open**
 - Verify the OpenWebNet command works manually from your machine:
